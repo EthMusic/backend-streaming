@@ -63,12 +63,12 @@ app.get('/', (req, res) => {
 
 // mongodb://localhost/trackDB
 let db;
-MongoClient.connect('mongodb://peaceful-bayou-84238.herokuapp.com/trackDB', (err, client) => {
+MongoClient.connect('mongodb://peaceful-bayou-84238.herokuapp.com/', (err, client) => {
   if (err) {
     console.log('MongoDB Connection Error. Please make sure that MongoDB is running.');
     process.exit(1);
   }
-  db = client.db('trackDB');
+  db = client.db('peaceful-bayou-84238.herokuapp.com');
 });
 
 /**
