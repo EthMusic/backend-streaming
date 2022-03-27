@@ -9,6 +9,10 @@ const mongodb = require('mongodb');
 const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
 
+require("dotenv").config();
+// require("./config/database").connect();
+
+
 /**
  * NodeJS Module dependencies.
  */
@@ -20,16 +24,51 @@ const { Readable } = require('stream');
 const app = express();
 app.use('/tracks', trackRoute);
 
+
+
+app.get('/', (req, res) => {
+  res.status(200).send("Welcome 🙌");
+});
+
 /**
  * Connect Mongo Driver to MongoDB.
  */
+//  async function main(){
+//   /**
+//    * Connection URI. Update <username>, <password>, and <your-cluster-url> to reflect your cluster.
+//    * See https://docs.mongodb.com/ecosystem/drivers/node/ for more details
+//    */
+//   const uri = "mongodb+srv://nikxtaco:ethernals-password@cluster0.m4mnd.mongodb.net/users?retryWrites=true&w=majority";
+
+//   const { MONGO_URI } = process.env;
+
+//   const client = new MongoClient(uri);
+
+//   try {
+//       // Connect to the MongoDB cluster
+//       await client.connect();
+
+//       // Make the appropriate DB calls
+//       await  listDatabases(client);
+
+//   } catch (e) {
+//       console.error(e);
+//   } finally {
+//       await client.close();
+//   }
+// }
+
+// main().catch(console.error);
+
+
+// mongodb://localhost/trackDB
 let db;
-MongoClient.connect('mongodb://localhost/trackDB', (err, database) => {
+MongoClient.connect('mongodb://localhost/trackDB', (err, client) => {
   if (err) {
     console.log('MongoDB Connection Error. Please make sure that MongoDB is running.');
     process.exit(1);
   }
-  db = database;
+  db = client.db('trackDB');
 });
 
 /**
@@ -62,6 +101,9 @@ trackRoute.get('/:trackID', (req, res) => {
     res.end();
   });
 });
+
+
+
 
 /**
  * POST /tracks
@@ -101,6 +143,4 @@ trackRoute.post('/', (req, res) => {
   });
 });
 
-app.listen(3005, () => {
-  console.log("App listening on port 3005!");
-});
+module.exports = app;
