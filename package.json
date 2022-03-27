@@ -6,6 +6,9 @@
   "scripts": {
     "start": "nodemon server.js"
   },
+  "keywords": [
+    "heroku"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -17,5 +20,8 @@
   },
   "devDependencies": {
     "nodemon": "^1.12.1"
+  },
+  "engines": {
+    "node": "12.x"
   }
 }
