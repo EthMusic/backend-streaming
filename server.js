@@ -12,7 +12,9 @@ const ObjectID = require('mongodb').ObjectID;
 const cors = require("cors") //Newly added
 
 require("dotenv").config();
-// require("./config/database").connect();
+
+const mongoose = require("mongoose");
+require("./config/database").connect();
 
 
 /**
@@ -66,12 +68,22 @@ app.get('/', (req, res) => {
 
 // mongodb://localhost/trackDB
 let db;
-MongoClient.connect(`mongodb://peaceful-bayou-84238.herokuapp.com/trackDB`, (err, client) => {
-  if (err) {
-    console.log('MongoDB Connection Error. Please make sure that MongoDB is running.');
-    process.exit(1);
-  }
-  db = client.db('trackDB');
+// MongoClient.connect(`mongodb://localhost/trackDB`, (err, client) => {
+//   if (err) {
+//     console.log('MongoDB Connection Error. Please make sure that MongoDB is running.');
+//     process.exit(1);
+//   }
+//   db = client.db('trackDB');
+// });
+
+
+let bucket;
+mongoose.connection.on("connected", () => {
+  var db = mongoose.connections[0].db;
+  bucket = new mongoose.mongo.GridFSBucket(db, {
+    bucketName: "newBucket"
+  });
+  console.log(bucket);
 });
 
 /**
@@ -86,9 +98,9 @@ trackRoute.get('/:trackID', (req, res) => {
   res.set('content-type', 'audio/mp3');
   res.set('accept-ranges', 'bytes');
 
-  let bucket = new mongodb.GridFSBucket(db, {
-    bucketName: 'tracks'
-  });
+  // let bucket = new mongodb.GridFSBucket(db, {
+  //   bucketName: 'tracks'
+  // });
 
   let downloadStream = bucket.openDownloadStream(trackID);
 
@@ -128,9 +140,9 @@ trackRoute.post('/', (req, res) => {
     readableTrackStream.push(req.file.buffer);
     readableTrackStream.push(null);
 
-    let bucket = new mongodb.GridFSBucket(db, {
-      bucketName: 'tracks'
-    });
+    // let bucket = new mongodb.GridFSBucket(db, {
+    //   bucketName: 'tracks'
+    // });
 
     let uploadStream = bucket.openUploadStream(trackName);
     let id = uploadStream.id;
