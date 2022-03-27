@@ -9,6 +9,8 @@ const mongodb = require('mongodb');
 const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
 
+const cors = require("cors") //Newly added
+
 require("dotenv").config();
 // require("./config/database").connect();
 
@@ -23,7 +25,7 @@ const { Readable } = require('stream');
  */
 const app = express();
 app.use('/tracks', trackRoute);
-
+app.use(cors()) // Newly added
 
 
 app.get('/', (req, res) => {
