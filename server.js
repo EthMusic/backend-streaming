@@ -63,7 +63,7 @@ app.get('/', (req, res) => {
 
 // mongodb://localhost/trackDB
 let db;
-MongoClient.connect('mongodb://peaceful-bayou-84238.herokuapp.com', (err, client) => {
+MongoClient.connect('mongodb://peaceful-bayou-84238.herokuapp.com:80/trackDB', (err, client) => {
   if (err) {
     console.log('MongoDB Connection Error. Please make sure that MongoDB is running.');
     process.exit(1);
