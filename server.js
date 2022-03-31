@@ -28,7 +28,6 @@ const { Readable } = require('stream');
  * Create Express server && Express Router configuration.
  */
 const app = express();
-app.use('/tracks', trackRoute);
 app.use(cors()) // Newly added
 
 
@@ -47,6 +46,7 @@ app.use(express.json());
 
 // importing user context
 const User = require("./model/user");
+const Track = require("./model/track");
 
 // Register
 app.post("/register", async (req, res) => {
@@ -205,6 +205,10 @@ mongoose.connection.on("connected", () => {
   console.log(bucket);
 });
 
+
+app.use('/tracks', trackRoute);
+
+
 /**
  * GET /tracks/:trackID
  */
@@ -244,7 +248,7 @@ trackRoute.get('/:trackID', (req, res) => {
  */
 trackRoute.post('/', (req, res) => {
   const storage = multer.memoryStorage()
-  const upload = multer({ storage: storage, limits: { fields: 1, fileSize: 6000000, files: 1, parts: 2 }});
+  const upload = multer({ storage: storage, limits: { fields: 2, fileSize: 6000000, files: 1, parts: 3 }});
   upload.single('track')(req, res, (err) => {
     if (err) {
       return res.status(400).json({ message: "Upload Request Validation Failed" });
@@ -253,7 +257,14 @@ trackRoute.post('/', (req, res) => {
     }
     
     let trackName = req.body.name;
-    
+    let artistName = req.body.artist;
+
+    // const oldTrack = await Track.findOne({ trackName });
+      
+    //       if (oldTrack) {
+    //         return res.status(409).send("Track Name Already Exists. Please Upload Another.");
+    //       }
+
     // Covert buffer to Readable Stream
     const readableTrackStream = new Readable();
     readableTrackStream.push(req.file.buffer);
@@ -271,10 +282,44 @@ trackRoute.post('/', (req, res) => {
       return res.status(500).json({ message: "Error uploading file" });
     });
 
-    uploadStream.on('finish', () => {
-      return res.status(201).json({ message: "File uploaded successfully, stored under Mongo ObjectID: " + id });
+    uploadStream.on('finish', async () => {
+      const track = await Track.create({
+        track_name: trackName,
+        artist_name: artistName,
+        play_id: id,
+      });
+  
+      // return new track
+      res.status(201).json(track);
+
+
+
+      // return res.status(201).json({ message: "File uploaded successfully, stored under Mongo ObjectID: " + id });  
     });
   });
 });
+
+
+
+
+
+
+
+
+
+
+/**
+ * GET /tracks/trackDetails
+ */
+ trackRoute.get('/', (req, res) => {
+  res.set('content-type', 'application/json');
+  Track.find({}, function(err, result) 
+  {
+    if(err) throw err;
+    return res.send(result);
+  });
+});
+
+
 
 module.exports = app;
