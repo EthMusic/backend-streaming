@@ -1,201 +1,129 @@
-/**
- * NPM Module dependencies.
- */
-const express = require('express');
-const trackRoute = express.Router();
-const multer = require('multer');
+/* Requirements */
 
+const express = require('express');
+const multer = require('multer');
+const mongoose = require("mongoose");
 const mongodb = require('mongodb');
 const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
-
-const cors = require("cors") //Newly added
-
-require("dotenv").config();
-
-const mongoose = require("mongoose");
-require("./config/database").connect();
+const cors = require("cors") 
 const auth = require("./middleware/auth");
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
-/**
- * NodeJS Module dependencies.
- */
+require("dotenv").config();
+require("./config/database").connect();
 const { Readable } = require('stream');
 
-/**
- * Create Express server && Express Router configuration.
- */
-const app = express();
-app.use(cors()) // Newly added
+/* Model Imports */
 
+const User = require("./model/user");
+const Track = require("./model/track");
+
+/* Routes */
+
+const trackRoute = express.Router();
+const userRoute = express.Router();
+
+const app = express();
+app.use(cors()) 
+
+/* Page that will only be accessible when logged in */
 
 app.get('/', cors(), auth, (req, res) => {
   res.status(200).send("Welcome 🙌");
 });
 
-
-
-
-
-
 app.use(express.json());
-
-// Logic goes here
-
-// importing user context
-const User = require("./model/user");
-const Track = require("./model/track");
 
 // Register
 app.post("/register", async (req, res) => {
+    try {
+    // Get user input
+    const { firstName, lastName, email, password } = req.body;
 
-        // Our register logic starts here
-         try {
-          // Get user input
-          const { firstName, lastName, email, password } = req.body;
-      
-          // Validate user input
-          if (!(email && password && firstName && lastName)) {
-            res.status(400).send("All input is required");
-          }
-      
-          // check if user already exist
-          // Validate if user exist in our database
-          const oldUser = await User.findOne({ email });
-      
-          if (oldUser) {
-            return res.status(409).send("User Already Exists. Please Login.");
-          }
-      
-          //Encrypt user password
-          encryptedUserPassword = await bcrypt.hash(password, 10);
-      
-          // Create user in our database
-          const user = await User.create({
-            first_name: firstName,
-            last_name: lastName,
-            email: email.toLowerCase(), // sanitize
-            password: encryptedUserPassword,
-          });
-      
-          // Create token
-          const token = jwt.sign(
-            { user_id: user._id, email },
-            process.env.TOKEN_KEY,
-            {
-              expiresIn: "5h",
-            }
-          );
-          // save user token
-          user.token = token;
-      
-          // return new user
-          res.status(201).json(user);
-        } catch (err) {
-          console.log(err);
-        }
-        // Our register logic ends here
-      });
+    // Validate user input
+    if (!(email && password && firstName && lastName)) {
+      res.status(400).send("All input is required");
+    }
 
+    // check if user already exist
+    // Validate if user exist in our database
+    const oldUser = await User.findOne({ email });
+
+    if (oldUser) {
+      return res.status(409).send("User Already Exists. Please Login.");
+    }
+
+    //Encrypt user password
+    encryptedUserPassword = await bcrypt.hash(password, 10);
+
+    // Create user in our database
+    const user = await User.create({
+      first_name: firstName,
+      last_name: lastName,
+      email: email.toLowerCase(), // sanitize
+      password: encryptedUserPassword,
+      tracks: [],
+    });
+
+    // Create token
+    const token = jwt.sign(
+      { user_id: user._id, email },
+      process.env.TOKEN_KEY,
+      {
+        expiresIn: "5h",
+      }
+    );
+    // save user token
+    user.token = token;
+
+    // return new user
+    res.status(201).json(user);
+  } catch (err) {
+    console.log(err);
+  }
+});
 
 // Login
 app.post("/login", async (req, res) => {
+    try {
+    // Get user input
+    const { email, password } = req.body;
 
-        // Our login logic starts here
-         try {
-          // Get user input
-          const { email, password } = req.body;
-      
-          // Validate user input
-          if (!(email && password)) {
-            res.status(400).send("All input is required");
-          }
-          // Validate if user exist in our database
-          const user = await User.findOne({ email });
-      
-          if (user && (await bcrypt.compare(password, user.password))) {
-            // Create token
-            const token = jwt.sign(
-              { user_id: user._id, email },
-              process.env.TOKEN_KEY,
-              {
-                expiresIn: "5h",
-              }
-            );
-      
-            // save user token
-            user.token = token;
-      
-            // user
-            return res.status(200).json(user);
-          }
-          return res.status(400).send("Invalid Credentials");
+    // Validate user input
+    if (!(email && password)) {
+      res.status(400).send("All input is required");
+    }
+    // Validate if user exist in our database
+    const user = await User.findOne({ email });
 
+    if (user && (await bcrypt.compare(password, user.password))) {
+      // Create token
+      const token = jwt.sign(
+        { user_id: user._id, email },
+        process.env.TOKEN_KEY,
+        {
+          expiresIn: "5h",
         }
-        catch{
-            return res.status(400).send("Invalid Credentials");
-        }
-          
+      );
+
+      // save user token
+      user.token = token;
+
+      // user
+      return res.status(200).json(user);
+    }
+    return res.status(400).send("Invalid Credentials");
+
+  }
+  catch{
+      return res.status(400).send("Invalid Credentials");
+  }
 });
 
+/* Creating Bucket to Save Tracks */
 
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Connect Mongo Driver to MongoDB.
- */
-//  async function main(){
-//   /**
-//    * Connection URI. Update <username>, <password>, and <your-cluster-url> to reflect your cluster.
-//    * See https://docs.mongodb.com/ecosystem/drivers/node/ for more details
-//    */
-//   const uri = "mongodb+srv://nikxtaco:ethernals-password@cluster0.m4mnd.mongodb.net/users?retryWrites=true&w=majority";
-
-//   const { MONGO_URI } = process.env;
-
-//   const client = new MongoClient(uri);
-
-//   try {
-//       // Connect to the MongoDB cluster
-//       await client.connect();
-
-//       // Make the appropriate DB calls
-//       await  listDatabases(client);
-
-//   } catch (e) {
-//       console.error(e);
-//   } finally {
-//       await client.close();
-//   }
-// }
-
-// main().catch(console.error);
-
-
-
-// mongodb://localhost/trackDB
 let db;
-// MongoClient.connect(`mongodb://localhost/trackDB`, (err, client) => {
-//   if (err) {
-//     console.log('MongoDB Connection Error. Please make sure that MongoDB is running.');
-//     process.exit(1);
-//   }
-//   db = client.db('trackDB');
-// });
-
-
 let bucket;
 mongoose.connection.on("connected", () => {
   var db = mongoose.connections[0].db;
@@ -205,47 +133,23 @@ mongoose.connection.on("connected", () => {
   console.log(bucket);
 });
 
+/* Common Route for Track Manipulation */
 
 app.use('/tracks', trackRoute);
 
+/* GET /tracks */
 
-/**
- * GET /tracks/:trackID
- */
-trackRoute.get('/:trackID', (req, res) => {
-  try {
-    var trackID = new ObjectID(req.params.trackID);
-  } catch(err) {
-    return res.status(400).json({ message: "Invalid trackID in URL parameter. Must be a single String of 12 bytes or a string of 24 hex characters" }); 
-  }
-  res.set('content-type', 'audio/mp3');
-  res.set('accept-ranges', 'bytes');
-
-  // let bucket = new mongodb.GridFSBucket(db, {
-  //   bucketName: 'tracks'
-  // });
-
-  let downloadStream = bucket.openDownloadStream(trackID);
-
-  downloadStream.on('data', (chunk) => {
-    res.write(chunk);
-  });
-
-  downloadStream.on('error', () => {
-    res.sendStatus(404);
-  });
-
-  downloadStream.on('end', () => {
-    res.end();
+trackRoute.get('/', (req, res) => {
+  res.set('content-type', 'application/json');
+  Track.find({}, function(err, result) 
+  {
+    if(err) throw err;
+    return res.send(result);
   });
 });
 
+/* POST /tracks */
 
-
-
-/**
- * POST /tracks
- */
 trackRoute.post('/', (req, res) => {
   const storage = multer.memoryStorage()
   const upload = multer({ storage: storage, limits: { fields: 2, fileSize: 6000000, files: 1, parts: 3 }});
@@ -259,20 +163,10 @@ trackRoute.post('/', (req, res) => {
     let trackName = req.body.name;
     let artistName = req.body.artist;
 
-    // const oldTrack = await Track.findOne({ trackName });
-      
-    //       if (oldTrack) {
-    //         return res.status(409).send("Track Name Already Exists. Please Upload Another.");
-    //       }
-
-    // Covert buffer to Readable Stream
+    // Convert buffer to Readable Stream
     const readableTrackStream = new Readable();
     readableTrackStream.push(req.file.buffer);
     readableTrackStream.push(null);
-
-    // let bucket = new mongodb.GridFSBucket(db, {
-    //   bucketName: 'tracks'
-    // });
 
     let uploadStream = bucket.openUploadStream(trackName);
     let id = uploadStream.id;
@@ -291,35 +185,101 @@ trackRoute.post('/', (req, res) => {
   
       // return new track
       res.status(201).json(track);
-
-
-
-      // return res.status(201).json({ message: "File uploaded successfully, stored under Mongo ObjectID: " + id });  
     });
   });
 });
 
+/* GET /tracks/:trackID */
 
+trackRoute.get('/:trackID', (req, res) => {
+  try {
+    var trackID = new ObjectID(req.params.trackID);
+  } catch(err) {
+    return res.status(400).json({ message: "Invalid trackID in URL parameter. Must be a single String of 12 bytes or a string of 24 hex characters" }); 
+  }
+  res.set('content-type', 'audio/mp3');
+  res.set('accept-ranges', 'bytes');
 
+  let downloadStream = bucket.openDownloadStream(trackID);
 
+  downloadStream.on('data', (chunk) => {
+    res.write(chunk);
+  });
 
+  downloadStream.on('error', () => {
+    res.sendStatus(404);
+  });
 
+  downloadStream.on('end', () => {
+    res.end();
+  });
+});
 
+/* Common Route for User Manipulation */
 
+app.use('/users', userRoute);
 
+/* GET /users */
 
-/**
- * GET /tracks/trackDetails
- */
- trackRoute.get('/', (req, res) => {
+userRoute.get('/', (req, res) => {
   res.set('content-type', 'application/json');
-  Track.find({}, function(err, result) 
+  User.find({}, function(err, result) 
   {
     if(err) throw err;
     return res.send(result);
   });
 });
 
+/* GET /user/:userID */
 
+userRoute.get('/:userID', async (req, res) => {
+  try {
+    var userID = new ObjectID(req.params.userID);
+  } catch(err) {
+    return res.status(400).json({ message: "Invalid userID in URL parameter. Must be a single String of 12 bytes or a string of 24 hex characters" }); 
+  }
+  res.set('content-type', 'application/json');
+
+  const existingUser = await User.findOne({ userID });
+
+  if (existingUser) {
+    return res.status(201).send(existingUser);
+  }  
+});
+
+/* POST /user/:userID */
+
+userRoute.post("/:userID", async (req, res) => {
+  try {
+  // Get user input
+  const { firstName, lastName, email, password, tracks } = req.body;
+
+  // Validate user input
+  if (!(email && password && firstName && lastName && tracks)) {
+    res.status(400).send("All input is required");
+  }
+
+   // create a filter for a movie to update
+   const filter = { email: email };
+   // this option instructs the method to create a document if no documents match the filter
+   const options = { upsert: false };
+   // create a document that sets the plot of the movie
+   const updateDoc = {
+     $set: {
+       first_name: firstName,
+       last_name: lastName,
+       email: email,
+       password: password,
+       tracks: tracks
+     },
+   };
+   const result = await User.updateOne(filter, updateDoc, options);
+   // return new user
+  res.status(201).json(result);
+
+} catch (err) {
+  console.log(err);
+}
+});
 
 module.exports = app;
