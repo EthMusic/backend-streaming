@@ -54,10 +54,8 @@ npm install -g localtunnel
 
 lt --port 4001
 
-### Sample Track Streaming Link
+### Note
 
-https://peaceful-bayou-84238.herokuapp.com/tracks/6245b2a80b74bf8d7e64328b
+Sample Track Streaming Link: https://peaceful-bayou-84238.herokuapp.com/tracks/6245b2a80b74bf8d7e64328b
 
-### Test If Logged In (page only viewable if so)
-
-https://peaceful-bayou-84238.herokuapp.com
+Database In Use: ethmusic
