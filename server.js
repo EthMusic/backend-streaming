@@ -29,7 +29,11 @@ app.use(cors())
 
 /* Page that will only be accessible when logged in */
 
-app.get('/', cors(), auth, (req, res) => {
+app.get('/', (req, res) => {
+  res.status(200).send("Sys check 🙌");
+});
+
+app.get('/welcome', cors(), auth, (req, res) => {
   res.status(200).send("Welcome 🙌");
 });
 
